@@ -26,31 +26,43 @@ const userSchema = joi.object({
     name:joi.string().required()
 })
 
-app.post('/participants', async (req, res) => {
-    const user = req.body
+const messageSchema = joi.object({
+    from:joi.string().required(),
+    to:joi.string().required(),
+    text:joi.string().required(),
+    type:joi.string().required(),
+    time:joi.string().required()
+})
 
-    const validation = userSchema.validate(user)
+app.post("/participants", async (req, res) => {
+    const { name } = req.body
+
+    const validation = userSchema.validate({ name })
     if (validation.error) {
         return res.status(422).send(validation.error.details)
     }
 
     try{
-        const resp = await db.collection().findOne(user)
+        const resp = await db.collection("participants").findOne({ name })
         if (resp === "") return res.status(422).send("Nome não pode ficar em branco")
         if (resp) return res.status(409).send("Nome já está em uso")
 
-        await db.collection('participants').insertOne({
-            ...user,
-            lastStatus: Date.now()
-        })
-        return res.sendStatus(201)
+        await db.collection("participants").insertOne({ ...name, lastStatus: Date.now() })
+        await db.collection('messages').insertOne({ from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: Date.now() })
+        res.sendStatus(201)
     } catch (err) {
-        return res.status(500).send(err.message)
+        res.status(500).send(err.message)
     }
 })
 
-app.get('/participants', (req, res) => {
-
+app.get("/participants", async (req, res) => {
+    try {
+        const userList = await db.collection("participants").find({}).toArray();
+        return res.send(userList);
+    } catch (error) {
+        console.error("Erro na rota get/participants", error);
+        return res.sendStatus(500);
+    }
 })
 
 app.post('/messages', (req, res) => {})
