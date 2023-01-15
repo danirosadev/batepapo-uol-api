@@ -79,7 +79,26 @@ app.post("/messages", async (req, res) => {
     }
 })
 
-app.get('messages', (req, res) => {})
+app.get("/messages", async (req, res) => {
+    const { query } = req
+    const { user } = req.body
+
+    try {
+        const messages = await db.collection("messages").find({ $or: [{from: user}, {to: user}, {to: "Todos"}]}).toArray()
+
+        if (query.limit) {
+            const messagesLimit = Number(query.limit)
+
+            if (messagesLimit < 1 || isNaN(messagesLimit)) return sendStatus(422)
+
+            return res.send([...messages].slice(-messagesLimit).reverse())
+        }
+
+        return res.send([...messages].reverse())
+    } catch (err) {
+        return res.sendStatus(500)
+    }
+})
 
 app.post('/status', (req, res) => {})
 
