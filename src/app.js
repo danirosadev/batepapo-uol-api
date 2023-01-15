@@ -34,6 +34,8 @@ const messageSchema = Joi.object({
     time:Joi.string().required()
 }) 
 
+checkUsers()
+
 app.post("/participants", async (req, res) => {
     const user = await userSchema.validateAsync(req.body)
     if (!user) return res.status(422).send("Nome não pode ficar em branco") 
@@ -97,7 +99,7 @@ app.get("/messages", async (req, res) => {
         return res.send([...messages].reverse())
     } catch (err) {
         return res.sendStatus(500)
-    }
+    } 
 })
 
 app.post("/status", async (req, res) => {
@@ -115,30 +117,21 @@ app.post("/status", async (req, res) => {
 })
 
 function checkUsers(){
-    const toleranceTime = 10000
-
+    const timer = 10000
     setInterval(async () => {
-        const bottomTime = Date.now() - toleranceTime
-
         try {
-            const participants = await db.collection("participants").find().toArray()
-
-            participants.forEach(async (participant) => {
-                if (participant.lastStatus < bottomTime) {
-                    await db.collection("participants").deleteOne({_id: ObjectId(participant._id)})
-                    await db.collection("messages").insertOne({
-                        from: participant.name,
-                        to: "Todos",
-                        text: "...sai da sala",
-                        type: "status",
-                        time: dayjs(Date.now()).format("HH:mm:ss")
-                    })
-                }
+            const now = dayjs();
+            const maxTimeOff = now.valueOf() - timer;
+            const inactiveList = await db.collection("participants").find({ lastStatus: { $lte: maxTimeOff } }).toArray();
+            inactiveList.map(async (inactiveUser)=>{
+                await db.collection("participants").deleteOne({ _id: inactiveUser._id });
+                await db.collection("messages").insertOne({from:inactiveUser.name,to:"Todos",text:"sai da sala...",type:"status",time:now.format('HH:mm:ss')})
             })
-        } catch (err) {
+
+        } catch (error) {
             return res.sendStatus(500)
         }
-    }, toleranceTime)
+    }, timer);
 }
 
 const PORT = 5000
