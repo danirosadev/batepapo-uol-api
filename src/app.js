@@ -114,6 +114,33 @@ app.post("/status", async (req, res) => {
     }
 })
 
+function checkUsers(){
+    const toleranceTime = 10000
+
+    setInterval(async () => {
+        const bottomTime = Date.now() - toleranceTime
+
+        try {
+            const participants = await db.collection("participants").find().toArray()
+
+            participants.forEach(async (participant) => {
+                if (participant.lastStatus < bottomTime) {
+                    await db.collection("participants").deleteOne({_id: ObjectId(participant._id)})
+                    await db.collection("messages").insertOne({
+                        from: participant.name,
+                        to: "Todos",
+                        text: "...sai da sala",
+                        type: "status",
+                        time: dayjs(Date.now()).format("HH:mm:ss")
+                    })
+                }
+            })
+        } catch (err) {
+            return res.sendStatus(500)
+        }
+    }, toleranceTime)
+}
+
 const PORT = 5000
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`)
