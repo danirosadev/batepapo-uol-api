@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
 import { MongoClient } from "mongodb"
+import dayjs from "dayjs"
 import Joi from "joi"
 import dotenv from "dotenv"
 dotenv.config()
@@ -35,14 +36,14 @@ const messageSchema = Joi.object({
 
 app.post("/participants", async (req, res) => {
     const user = await userSchema.validateAsync(req.body)
+    if (!user) return res.status(422).send("Nome não pode ficar em branco") 
 
     try{
         const resp = await db.collection("participants").findOne(user)
-        if (resp === "") return res.status(422).send("Nome não pode ficar em branco")
         if (resp) return res.status(409).send("Nome já está em uso")
 
         await db.collection("participants").insertOne({ ...user, lastStatus: Date.now() })
-        await db.collection('messages').insertOne({ from: user.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: Date.now() })
+        await db.collection('messages').insertOne({ from: user.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs(Date.now()).format('HH:MM:SS') })
         res.sendStatus(201)
     } catch (err) {
         res.status(500).send(err.message)
@@ -59,7 +60,12 @@ app.get("/participants", async (req, res) => {
     }
 })
 
-app.post('/messages', (req, res) => {})
+app.post("/messages", async (req, res) => {
+    const message = await userSchema.validateAsync(req.body)
+    const { user } = req.headers
+    const isUser = await db.collection("participants").findOne({ name: user })
+    if (!isUser) return res.sendStatus(422)
+})
 
 app.get('messages', (req, res) => {})
 
