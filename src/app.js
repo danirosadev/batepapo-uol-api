@@ -28,11 +28,11 @@ const userSchema = Joi.object({
 
 const messageSchema = Joi.object({
     from:Joi.string().required(),
-    to:Joi.string().required(),
+    to:Joi.string(),
     text:Joi.string().required(),
-    type:Joi.string().required(),
+    type:Joi.string(),
     time:Joi.string().required()
-})
+}) 
 
 app.post("/participants", async (req, res) => {
     const user = await userSchema.validateAsync(req.body)
@@ -55,16 +55,28 @@ app.get("/participants", async (req, res) => {
         const userList = await db.collection("participants").find({}).toArray()
         return res.send(userList);
     } catch (error) {
-        console.error("Erro na rota get/participants", error);
         return res.sendStatus(500);
     }
 })
 
 app.post("/messages", async (req, res) => {
-    const message = await userSchema.validateAsync(req.body)
+    const message = await messageSchema.validateAsync(req.body)
     const { user } = req.headers
     const isUser = await db.collection("participants").findOne({ name: user })
     if (!isUser) return res.sendStatus(422)
+
+    try {
+        const messagePosted = await db.collection("messages").insertOne({
+            from: user,
+            ...message,
+            time: dayjs(Date.now()).format("HH:mm:ss")
+        })
+        if (messagePosted) return res.sendStatus(201)
+    } catch (err) {
+        if (err.isJoi) return res.sendStatus(422)
+
+        return res.sendStatus(500)
+    }
 })
 
 app.get('messages', (req, res) => {})
@@ -74,4 +86,4 @@ app.post('/status', (req, res) => {})
 const PORT = 5000
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`)
-})
+}) 
