@@ -1,54 +1,48 @@
 import express from "express"
 import cors from "cors"
 import { MongoClient } from "mongodb"
-import joi from "joi"
+import Joi from "joi"
 import dotenv from "dotenv"
 dotenv.config()
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL)
+let db
 
 try {
     await mongoClient.connect()
     console.log('MongoDB Connected!')
+    db = mongoClient.db()
 } catch (err) {
     console.log(err.message)
 }
-
-const db = mongoClient.db('batepapo-uol')
-
 
 const app = express()
 
 app.use(express.json())
 app.use(cors())
 
-const userSchema = joi.object({
-    name:joi.string().required()
+const userSchema = Joi.object({
+    name: Joi.string().alphanum().required()
 })
 
-const messageSchema = joi.object({
-    from:joi.string().required(),
-    to:joi.string().required(),
-    text:joi.string().required(),
-    type:joi.string().required(),
-    time:joi.string().required()
+const messageSchema = Joi.object({
+    from:Joi.string().required(),
+    to:Joi.string().required(),
+    text:Joi.string().required(),
+    type:Joi.string().required(),
+    time:Joi.string().required()
 })
 
 app.post("/participants", async (req, res) => {
-    const { name } = req.body
-
-    const validation = userSchema.validate({ name })
-    if (validation.error) {
-        return res.status(422).send(validation.error.details)
-    }
+    const user = await userSchema.validateAsync(req.body)
 
     try{
-        const resp = await db.collection("participants").findOne({ name })
+        const resp = await db.collection("participants").findOne(user)
         if (resp === "") return res.status(422).send("Nome não pode ficar em branco")
         if (resp) return res.status(409).send("Nome já está em uso")
 
-        await db.collection("participants").insertOne({ ...name, lastStatus: Date.now() })
-        await db.collection('messages').insertOne({ from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: Date.now() })
+        await db.collection("participants").insertOne({ ...user, lastStatus: Date.now() })
+        await db.collection('messages').insertOne({ from: user.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: Date.now() })
         res.sendStatus(201)
     } catch (err) {
         res.status(500).send(err.message)
@@ -57,7 +51,7 @@ app.post("/participants", async (req, res) => {
 
 app.get("/participants", async (req, res) => {
     try {
-        const userList = await db.collection("participants").find({}).toArray();
+        const userList = await db.collection("participants").find({}).toArray()
         return res.send(userList);
     } catch (error) {
         console.error("Erro na rota get/participants", error);
