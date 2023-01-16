@@ -89,9 +89,9 @@ app.get("/messages", async (req, res) => {
         const messages = await db.collection("messages").find({ $or: [{from: user}, {to: user}, {to: "Todos"}]}).toArray()
 
         if (query.limit) {
-            const validLimit = Number.isInteger(query.limit) && query.limit > 0
+            const messagesLimit = Number.isInteger(query.limit)
 
-            if (!validLimit) return sendStatus(422)
+            if (messagesLimit < 1 || isNaN(messagesLimit)) return sendStatus(422)
 
             return res.send([...messages].slice(-messagesLimit).reverse())
         }
