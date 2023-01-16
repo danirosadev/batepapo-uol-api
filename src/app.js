@@ -62,10 +62,12 @@ app.get("/participants", async (req, res) => {
 })
 
 app.post("/messages", async (req, res) => {
-    try {
-        const message = await messageSchema.validateAsync(req.body)
-        const { user } = req.headers
+    const message = await messageSchema.validateAsync(req.body)
+    const user = req.headers.user
+    const onlineUser = await db.collection("participants").findOne({name: req.headers.user})
+    if (!onlineUser) return res.sendStatus(422)
 
+    try {
         await db.collection("messages").insertOne({
             from: user,
             ...message,
