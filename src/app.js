@@ -27,11 +27,11 @@ const userSchema = Joi.object({
 })
 
 const messageSchema = Joi.object({
-    from:Joi.string().required(),
-    to:Joi.string(),
+    from:Joi.string(),
+    to:Joi.string().valid("Todos", "").required(),
     text:Joi.string().required(),
-    type:Joi.string(),
-    time:Joi.string().required()
+    type:Joi.string().valid("message", "private_message").required(),
+    time:Joi.string()
 }) 
 
 checkUsers()
