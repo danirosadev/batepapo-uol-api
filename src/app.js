@@ -68,7 +68,7 @@ app.post("/messages", async (req, res) => {
 
         await db.collection("messages").insertOne({
             from: user,
-            text: message,
+            ...message,
             time: dayjs(Date.now()).format("HH:mm:ss")
         })
         return res.sendStatus(201)
