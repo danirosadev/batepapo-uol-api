@@ -75,6 +75,8 @@ app.post("/messages", async (req, res) => {
         })
         return res.sendStatus(201)
     } catch (err) {
+        if (err.isJoi) return res.sendStatus(422)
+        
         res.status(500).send(err.message)
     }
 })
