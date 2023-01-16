@@ -27,11 +27,9 @@ const userSchema = Joi.object({
 })
 
 const messageSchema = Joi.object({
-    from:Joi.string(),
     to:Joi.string().valid("Todos", "").required(),
     text:Joi.string().required(),
-    type:Joi.string().valid("message", "private_message").required(),
-    time:Joi.string()
+    type:Joi.string().valid("message", "private_message").required()
 }) 
 
 checkUsers()
@@ -39,7 +37,7 @@ checkUsers()
 app.post("/participants", async (req, res) => {
     try{
         const user = await userSchema.validateAsync(req.body)
-        if (!user) return res.sendStatus(422)
+        //if (!user) return res.sendStatus(422)
 
         const resp = await db.collection("participants").findOne(user)
         if (resp) return res.status(409).send("Nome já está em uso")
@@ -48,6 +46,8 @@ app.post("/participants", async (req, res) => {
         await db.collection('messages').insertOne({ from: user.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs(Date.now()).format('HH:MM:ss') })
         res.sendStatus(201)
     } catch (err) {
+        if (err.isJoi) return res.sendStatus(422)
+
         res.status(500).send(err.message)
     }
 })
