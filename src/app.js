@@ -76,7 +76,7 @@ app.post("/messages", async (req, res) => {
         return res.sendStatus(201)
     } catch (err) {
         if (err.isJoi) return res.sendStatus(422)
-        
+
         res.status(500).send(err.message)
     }
 })
@@ -89,9 +89,9 @@ app.get("/messages", async (req, res) => {
         const messages = await db.collection("messages").find({ $or: [{from: user}, {to: user}, {to: "Todos"}]}).toArray()
 
         if (query.limit) {
-            const messagesLimit = Number(query.limit)
+            const validLimit = Number.isInteger(query.limit) && query.limit > 0
 
-            if (messagesLimit < 1 || isNaN(messagesLimit)) return sendStatus(422)
+            if (!validLimit) return sendStatus(422)
 
             return res.send([...messages].slice(-messagesLimit).reverse())
         }
@@ -112,7 +112,7 @@ app.post("/status", async (req, res) => {
         await db.collection("participants").updateOne({ name: user }, { $set: {lastStatus: Date.now()}})
         return res.sendStatus(200)
     } catch (err) {
-        return res.sendStatus(500)
+        return res.sendStatus(404)
     }
 })
 
