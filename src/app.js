@@ -38,7 +38,7 @@ checkUsers()
 
 app.post("/participants", async (req, res) => {
     const user = await userSchema.validateAsync(req.body)
-    if (!user) return res.status(422).send("Nome não pode ficar em branco") 
+    if (!user) return res.sendStatus(422)
 
     try{
         const resp = await db.collection("participants").findOne(user)
@@ -55,9 +55,9 @@ app.post("/participants", async (req, res) => {
 app.get("/participants", async (req, res) => {
     try {
         const userList = await db.collection("participants").find({}).toArray()
-        return res.send(userList);
-    } catch (error) {
-        return res.sendStatus(500);
+        return res.send(userList)
+    } catch (err) {
+        res.status(500).send(err.message)
     }
 })
 
@@ -73,7 +73,7 @@ app.post("/messages", async (req, res) => {
             ...message,
             time: dayjs(Date.now()).format("HH:mm:ss")
         })
-        if (messagePosted) return res.sendStatus(201)
+        if (messagePosted) return res.status(201).send("ok")
     } catch (err) {
         if (err.isJoi) return res.sendStatus(422)
 
