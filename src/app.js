@@ -37,7 +37,6 @@ checkUsers()
 app.post("/participants", async (req, res) => {
     try{
         const user = await userSchema.validateAsync(req.body)
-        //if (!user) return res.sendStatus(422)
 
         const resp = await db.collection("participants").findOne(user)
         if (resp) return res.status(409).send("Nome já está em uso")
@@ -89,7 +88,7 @@ app.get("/messages", async (req, res) => {
         const messages = await db.collection("messages").find({ $or: [{from: user}, {to: user}, {to: "Todos"}]}).toArray()
 
         if (query.limit) {
-            const messagesLimit = Number.isInteger(query.limit)
+            const messagesLimit = Number(query.limit)
 
             if (messagesLimit < 1 || isNaN(messagesLimit)) return sendStatus(422)
 
