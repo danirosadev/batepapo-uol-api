@@ -97,7 +97,7 @@ app.get("/messages", async (req, res) => {
 
         return res.send([...messages].reverse())
     } catch (err) {
-        return res.sendStatus(422)
+        return res.sendStatus(500)
     } 
 })
 
