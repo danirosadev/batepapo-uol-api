@@ -37,10 +37,10 @@ const messageSchema = Joi.object({
 checkUsers()
 
 app.post("/participants", async (req, res) => {
-    const user = await userSchema.validateAsync(req.body)
-    if (!user) return res.sendStatus(422)
-
     try{
+        const user = await userSchema.validateAsync(req.body)
+        if (!user) return res.sendStatus(422)
+
         const resp = await db.collection("participants").findOne(user)
         if (resp) return res.status(409).send("Nome já está em uso")
 
@@ -62,22 +62,18 @@ app.get("/participants", async (req, res) => {
 })
 
 app.post("/messages", async (req, res) => {
-    const message = await messageSchema.validateAsync(req.body)
-    const { user } = req.headers
-    const isUser = await db.collection("participants").findOne({ name: user })
-    if (!isUser) return res.sendStatus(422)
-
     try {
-        const messagePosted = await db.collection("messages").insertOne({
+        const message = await messageSchema.validateAsync(req.body)
+        const { user } = req.headers
+
+        await db.collection("messages").insertOne({
             from: user,
-            ...message,
+            text: message,
             time: dayjs(Date.now()).format("HH:mm:ss")
         })
-        if (messagePosted) return res.status(201).send("ok")
+        return res.sendStatus(201)
     } catch (err) {
-        if (err.isJoi) return res.sendStatus(422)
-
-        return res.sendStatus(500)
+        res.status(500).send(err.message)
     }
 })
 
